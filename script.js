@@ -20,10 +20,12 @@ const enemyCarImg2 = new Image();
 enemyCarImg2.src = "https://via.placeholder.com/50x80/00FF00/FFFFFF?text=Enemy2";
 const roadImg = new Image();
 roadImg.src = "https://via.placeholder.com/400x600/808080/FFFFFF?text=Road";
-const powerUpImg = new Image();
-powerUpImg.src = "https://via.placeholder.com/30x30/FFFF00/000000?text=P";
+const powerUpScoreImg = new Image();
+powerUpScoreImg.src = "https://via.placeholder.com/30x30/FFFF00/000000?text=2X";
+const powerUpInvincibleImg = new Image();
+powerUpInvincibleImg.src = "https://via.placeholder.com/30x30/00FFFF/000000?text=INV";
 
-const images = [playerCarImg, enemyCarImg1, enemyCarImg2, roadImg, powerUpImg];
+const images = [playerCarImg, enemyCarImg1, enemyCarImg2, roadImg, powerUpScoreImg, powerUpInvincibleImg];
 let assetsLoaded = 0;
 
 // Sons
@@ -47,7 +49,8 @@ let playerCar = {
     y: 0,
     width: PLAYER_CAR_WIDTH,
     height: PLAYER_CAR_HEIGHT,
-    speed: 5
+    speed: 5,
+    invincible: false
 };
 
 let enemyCars = [];
@@ -56,6 +59,7 @@ let score = 0;
 let scoreMultiplier = 1;
 let powerUpActive = false;
 let powerUpTimer;
+let invincibleTimer;
 let highScore = localStorage.getItem('carGameHighScore') || 0;
 let gameSpeed = 3; // Vitesse initiale des voitures ennemies
 let gameInterval;
@@ -163,14 +167,26 @@ function createEnemyCar(lane = null) {
 function createPowerUp() {
     const lane = generateRandomLane();
     const x = lane * LANE_WIDTH + (LANE_WIDTH / 2) - (POWER_UP_WIDTH / 2);
+    const randomType = Math.random();
+    let powerUpType;
+    let powerUpImage;
+
+    if (randomType < 0.7) { // 70% chance for score multiplier
+        powerUpType = 'scoreMultiplier';
+        powerUpImage = powerUpScoreImg;
+    } else { // 30% chance for invincibility
+        powerUpType = 'invincible';
+        powerUpImage = powerUpInvincibleImg;
+    }
+
     powerUps.push({
         x: x,
         y: -POWER_UP_HEIGHT,
         width: POWER_UP_WIDTH,
         height: POWER_UP_HEIGHT,
         speed: gameSpeed,
-        img: powerUpImg,
-        type: 'scoreMultiplier'
+        img: powerUpImage,
+        type: powerUpType
     });
 }
 
@@ -209,6 +225,12 @@ function drawGame() {
         ctx.font = '20px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('2X SCORE!', canvas.width / 2, 30);
+    }
+    if (playerCar.invincible) {
+        ctx.fillStyle = 'cyan';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('INVINCIBLE!', canvas.width / 2, 60);
     }
 }
 
@@ -250,7 +272,7 @@ function updateGameArea() {
         }
 
         // Détection de collision avec les ennemis
-        if (
+        if (!playerCar.invincible &&
             playerCar.x < enemy.x + enemy.width &&
             playerCar.x + playerCar.width > enemy.x &&
             playerCar.y < enemy.y + enemy.height &&
@@ -300,6 +322,13 @@ function activatePowerUp(type) {
             scoreMultiplier = 1;
             powerUpActive = false;
         }, 5000); // Power-up dure 5 secondes
+    } else if (type === 'invincible') {
+        playerCar.invincible = true;
+        // Réinitialiser le timer si un power-up est déjà actif
+        clearTimeout(invincibleTimer);
+        invincibleTimer = setTimeout(() => {
+            playerCar.invincible = false;
+        }, 7000); // Invincibilité dure 7 secondes
     }
 }
 
@@ -350,7 +379,9 @@ function startGame() {
     score = 0;
     scoreMultiplier = 1;
     powerUpActive = false;
+    playerCar.invincible = false;
     clearTimeout(powerUpTimer);
+    clearTimeout(invincibleTimer);
     scoreDisplay.textContent = score;
     gameSpeed = 3;
     resizeGame();
