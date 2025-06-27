@@ -202,6 +202,14 @@ function drawGame() {
     drawCar(playerCar, playerCarImg);
     enemyCars.forEach(enemy => drawCar(enemy, enemy.img));
     powerUps.forEach(powerUp => ctx.drawImage(powerUp.img, powerUp.x, powerUp.y, powerUp.width, powerUp.height));
+
+    // Draw power-up active indicator
+    if (powerUpActive) {
+        ctx.fillStyle = 'yellow';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('2X SCORE!', canvas.width / 2, 30);
+    }
 }
 
 function updateGameArea() {
