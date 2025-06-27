@@ -153,7 +153,7 @@ function generateRandomLane() {
     return Math.floor(Math.random() * 3); // 0, 1, ou 2 pour les trois voies
 }
 
-function createEnemyCar(lane = null, yOffset = 0) {
+function createEnemyCar(lane = null, yOffset = 0, type = 'straight') {
     const selectedLane = lane !== null ? lane : generateRandomLane();
     const x = selectedLane * LANE_WIDTH + (LANE_WIDTH / 2) - (ENEMY_CAR_WIDTH / 2);
     const enemyImg = Math.random() < 0.5 ? enemyCarImg1 : enemyCarImg2;
@@ -163,7 +163,10 @@ function createEnemyCar(lane = null, yOffset = 0) {
         width: ENEMY_CAR_WIDTH,
         height: ENEMY_CAR_HEIGHT,
         speed: gameSpeed,
-        img: enemyImg
+        img: enemyImg,
+        type: type, // 'straight' or 'swerving'
+        laneChangeDirection: 0, // -1 for left, 1 for right, 0 for none
+        laneChangeTimer: 0
     });
 }
 
