@@ -49,7 +49,8 @@ button:hover {
     background-color: #0056b3;
 }
 
-.game-over-screen {
+.game-over-screen,
+.start-screen {
     position: absolute;
     top: 0;
     left: 0;
@@ -64,13 +65,14 @@ button:hover {
     text-align: center;
     font-size: 1.5em;
     z-index: 10;
-    display: none; /* Caché par défaut */
 }
 
-.game-over-screen h2 {
+.game-over-screen h2,
+.start-screen h2 {
     margin-bottom: 10px;
 }
 
-.game-over-screen p {
+.game-over-screen p,
+.start-screen p {
     margin-bottom: 20px;
 }

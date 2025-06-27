@@ -4,10 +4,12 @@ const scoreDisplay = document.getElementById('score');
 const finalScoreDisplay = document.getElementById('finalScore');
 const highScoreDisplay = document.getElementById('highScoreDisplay');
 const currentHighScoreDisplay = document.getElementById('currentHighScore');
-const startButton = document.getElementById('startButton');
+const startButton = document.getElementById('startButton'); // This button is now hidden
+const startFromScreenButton = document.getElementById('startFromScreenButton');
 const restartButton = document.getElementById('restartButton');
 const pauseButton = document.getElementById('pauseButton');
 const gameOverScreen = document.getElementById('gameOverScreen');
+const startScreen = document.getElementById('startScreen');
 
 // Images
 const playerCarImg = document.getElementById('playerCarImg');
@@ -109,6 +111,11 @@ function updateGameArea() {
             score++;
             scoreDisplay.textContent = score;
             scoreSound.play();
+            // Petit effet visuel sur le score
+            scoreDisplay.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                scoreDisplay.style.transform = 'scale(1)';
+            }, 100);
             i--; // Ajuster l'index après suppression
 
             // Augmenter la vitesse du jeu tous les 10 points
@@ -144,7 +151,8 @@ function startGame() {
     playerCar.x = canvas.width / 2 - PLAYER_CAR_WIDTH / 2;
     playerCar.y = canvas.height - PLAYER_CAR_HEIGHT - 10;
     enemyCars = [];
-    startButton.style.display = 'none';
+    startButton.style.display = 'none'; // Hide the old start button
+    startScreen.style.display = 'none'; // Hide the start screen
     pauseButton.style.display = 'block';
     gameOverScreen.style.display = 'none';
     updateHighScoreDisplay();
@@ -199,7 +207,9 @@ document.addEventListener('keydown', (e) => {
     if (playerCar.x + playerCar.width > canvas.width) playerCar.x = canvas.width - playerCar.width;
 });
 
-startButton.addEventListener('click', startGame);
+// Event Listeners
+startButton.addEventListener('click', startGame); // Old button, now hidden
+startFromScreenButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
 pauseButton.addEventListener('click', togglePause);
 
@@ -208,4 +218,8 @@ window.onload = () => {
     updateHighScoreDisplay();
     drawRoad();
     drawCar(playerCar, playerCarImg);
+    // Show start screen initially
+    startScreen.style.display = 'flex';
+    startButton.style.display = 'none'; // Ensure old button is hidden
+    pauseButton.style.display = 'none'; // Ensure pause button is hidden
 };

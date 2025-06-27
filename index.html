@@ -10,6 +10,12 @@
     <h1>Jeu de Voiture</h1>
     <div class="game-container">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="start-screen" id="startScreen">
+            <h2>Bienvenue !</h2>
+            <p>Évite les voitures rouges.</p>
+            <p>Utilise les flèches Gauche/Droite ou Q/D pour te déplacer.</p>
+            <button id="startFromScreenButton">Démarrer le jeu</button>
+        </div>
         <div class="game-over-screen" id="gameOverScreen">
             <h2>Game Over!</h2>
             <p>Votre score: <span id="finalScore">0</span></p>
@@ -18,7 +24,6 @@
         </div>
     </div>
     <div class="score-container">Score: <span id="score">0</span> | Meilleur score: <span id="currentHighScore">0</span></div>
-    <button id="startButton">Démarrer le jeu</button>
     <button id="pauseButton" style="display:none;">Pause</button>
 
     <!-- Assets cachés pour le jeu -->
