@@ -13,11 +13,13 @@
         <div class="game-over-screen" id="gameOverScreen">
             <h2>Game Over!</h2>
             <p>Votre score: <span id="finalScore">0</span></p>
+            <p>Meilleur score: <span id="highScoreDisplay">0</span></p>
             <button id="restartButton">Rejouer</button>
         </div>
     </div>
-    <div class="score-container">Score: <span id="score">0</span></div>
+    <div class="score-container">Score: <span id="score">0</span> | Meilleur score: <span id="currentHighScore">0</span></div>
     <button id="startButton">Démarrer le jeu</button>
+    <button id="pauseButton" style="display:none;">Pause</button>
 
     <!-- Assets cachés pour le jeu -->
     <img id="playerCarImg" src="https://via.placeholder.com/50x80/0000FF/FFFFFF?text=Player" alt="Voiture du joueur" style="display:none;">

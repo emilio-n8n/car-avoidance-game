@@ -2,8 +2,11 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score');
 const finalScoreDisplay = document.getElementById('finalScore');
+const highScoreDisplay = document.getElementById('highScoreDisplay');
+const currentHighScoreDisplay = document.getElementById('currentHighScore');
 const startButton = document.getElementById('startButton');
 const restartButton = document.getElementById('restartButton');
+const pauseButton = document.getElementById('pauseButton');
 const gameOverScreen = document.getElementById('gameOverScreen');
 
 // Images
@@ -21,6 +24,9 @@ const PLAYER_CAR_HEIGHT = 80;
 const ENEMY_CAR_WIDTH = 50;
 const ENEMY_CAR_HEIGHT = 80;
 const LANE_WIDTH = canvas.width / 3;
+const ROAD_MARKING_WIDTH = 10;
+const ROAD_MARKING_HEIGHT = 50;
+const ROAD_MARKING_GAP = 70;
 
 let playerCar = {
     x: canvas.width / 2 - PLAYER_CAR_WIDTH / 2,
@@ -32,10 +38,12 @@ let playerCar = {
 
 let enemyCars = [];
 let score = 0;
+let highScore = localStorage.getItem('carGameHighScore') || 0;
 let gameSpeed = 3; // Vitesse initiale des voitures ennemies
 let gameInterval;
 let enemySpawnInterval;
 let gameRunning = false;
+let gamePaused = false;
 let roadScrollOffset = 0;
 
 // Fonction pour dessiner une voiture avec une image
@@ -43,10 +51,19 @@ function drawCar(car, img) {
     ctx.drawImage(img, car.x, car.y, car.width, car.height);
 }
 
-// Fonction pour dessiner la route défilante
+// Fonction pour dessiner la route défilante et les marquages
 function drawRoad() {
     ctx.drawImage(roadImg, 0, roadScrollOffset, canvas.width, canvas.height);
     ctx.drawImage(roadImg, 0, roadScrollOffset - canvas.height, canvas.width, canvas.height);
+
+    // Dessiner les marquages de route
+    ctx.fillStyle = 'white';
+    for (let i = 0; i < canvas.height / (ROAD_MARKING_HEIGHT + ROAD_MARKING_GAP); i++) {
+        // Marquage gauche
+        ctx.fillRect(LANE_WIDTH - ROAD_MARKING_WIDTH / 2, (i * (ROAD_MARKING_HEIGHT + ROAD_MARKING_GAP) + roadScrollOffset) % (canvas.height + ROAD_MARKING_GAP) - ROAD_MARKING_GAP, ROAD_MARKING_WIDTH, ROAD_MARKING_HEIGHT);
+        // Marquage droit
+        ctx.fillRect(2 * LANE_WIDTH - ROAD_MARKING_WIDTH / 2, (i * (ROAD_MARKING_HEIGHT + ROAD_MARKING_GAP) + roadScrollOffset) % (canvas.height + ROAD_MARKING_GAP) - ROAD_MARKING_GAP, ROAD_MARKING_WIDTH, ROAD_MARKING_HEIGHT);
+    }
 }
 
 function generateRandomLane() {
@@ -68,7 +85,7 @@ function createEnemyCar() {
 }
 
 function updateGameArea() {
-    if (!gameRunning) return;
+    if (!gameRunning || gamePaused) return;
 
     // Défilement de la route
     roadScrollOffset += gameSpeed;
@@ -120,6 +137,7 @@ function updateGameArea() {
 
 function startGame() {
     gameRunning = true;
+    gamePaused = false;
     score = 0;
     scoreDisplay.textContent = score;
     gameSpeed = 3;
@@ -127,7 +145,9 @@ function startGame() {
     playerCar.y = canvas.height - PLAYER_CAR_HEIGHT - 10;
     enemyCars = [];
     startButton.style.display = 'none';
+    pauseButton.style.display = 'block';
     gameOverScreen.style.display = 'none';
+    updateHighScoreDisplay();
 
     gameInterval = setInterval(updateGameArea, 20); // Rafraîchissement du jeu
     enemySpawnInterval = setInterval(createEnemyCar, 2000); // Apparition des voitures ennemies
@@ -138,12 +158,35 @@ function endGame() {
     clearInterval(gameInterval);
     clearInterval(enemySpawnInterval);
     finalScoreDisplay.textContent = score;
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('carGameHighScore', highScore);
+    }
+    highScoreDisplay.textContent = highScore;
     gameOverScreen.style.display = 'flex';
+    pauseButton.style.display = 'none';
+}
+
+function togglePause() {
+    gamePaused = !gamePaused;
+    if (gamePaused) {
+        clearInterval(gameInterval);
+        clearInterval(enemySpawnInterval);
+        pauseButton.textContent = 'Reprendre';
+    } else {
+        gameInterval = setInterval(updateGameArea, 20);
+        enemySpawnInterval = setInterval(createEnemyCar, Math.max(500, 2000 - gameSpeed * 100));
+        pauseButton.textContent = 'Pause';
+    }
+}
+
+function updateHighScoreDisplay() {
+    currentHighScoreDisplay.textContent = localStorage.getItem('carGameHighScore') || 0;
 }
 
 // Contrôles de la voiture du joueur
 document.addEventListener('keydown', (e) => {
-    if (!gameRunning) return;
+    if (!gameRunning || gamePaused) return;
 
     if (e.key === 'ArrowLeft' || e.key === 'q') {
         playerCar.x -= playerCar.speed * 10; // Déplacement plus rapide
@@ -158,10 +201,11 @@ document.addEventListener('keydown', (e) => {
 
 startButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
+pauseButton.addEventListener('click', togglePause);
 
 // Initialisation du jeu (pour afficher la voiture du joueur avant de commencer)
-// Assurez-vous que les images sont chargées avant de dessiner
 window.onload = () => {
+    updateHighScoreDisplay();
     drawRoad();
     drawCar(playerCar, playerCarImg);
 };
