@@ -274,6 +274,28 @@ function updateGameArea() {
         let enemy = enemyCars[i];
         enemy.y += enemy.speed;
 
+        // Swerving enemy logic
+        if (enemy.type === 'swerving') {
+            enemy.laneChangeTimer++;
+            if (enemy.laneChangeTimer % 50 === 0) { // Change direction every 50 frames
+                enemy.laneChangeDirection = Math.random() < 0.5 ? -1 : 1; // -1 for left, 1 for right
+            } else if (enemy.laneChangeTimer % 100 === 0) {
+                enemy.laneChangeDirection = 0; // Stop swerving
+            }
+            enemy.x += enemy.laneChangeDirection * (gameSpeed * 0.5); // Swerve speed
+
+            // Keep enemy within its lane boundaries (approx)
+            const currentLane = Math.floor(enemy.x / LANE_WIDTH);
+            const laneCenter = currentLane * LANE_WIDTH + (LANE_WIDTH / 2);
+            const halfEnemyWidth = enemy.width / 2;
+
+            if (enemy.x < currentLane * LANE_WIDTH) {
+                enemy.x = currentLane * LANE_WIDTH;
+            } else if (enemy.x + enemy.width > (currentLane + 1) * LANE_WIDTH) {
+                enemy.x = (currentLane + 1) * LANE_WIDTH - enemy.width;
+            }
+        }
+
         // Supprimer les voitures sorties de l'écran
         if (enemy.y > canvas.height) {
             enemyCars.splice(i, 1);
