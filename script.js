@@ -10,6 +10,7 @@ const pauseButton = document.getElementById('pauseButton');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const startScreen = document.getElementById('startScreen');
 const loadingScreen = document.getElementById('loadingScreen');
+const powerUpTimerDisplay = document.getElementById('powerUpTimerDisplay');
 
 // Images
 const playerCarImg = new Image();
@@ -152,13 +153,13 @@ function generateRandomLane() {
     return Math.floor(Math.random() * 3); // 0, 1, ou 2 pour les trois voies
 }
 
-function createEnemyCar(lane = null) {
+function createEnemyCar(lane = null, yOffset = 0) {
     const selectedLane = lane !== null ? lane : generateRandomLane();
     const x = selectedLane * LANE_WIDTH + (LANE_WIDTH / 2) - (ENEMY_CAR_WIDTH / 2);
     const enemyImg = Math.random() < 0.5 ? enemyCarImg1 : enemyCarImg2;
     enemyCars.push({
         x: x,
-        y: -ENEMY_CAR_HEIGHT, // Apparaît en haut du canvas
+        y: -ENEMY_CAR_HEIGHT - yOffset, // Apparaît en haut du canvas avec un décalage
         width: ENEMY_CAR_WIDTH,
         height: ENEMY_CAR_HEIGHT,
         speed: gameSpeed,
@@ -193,24 +194,37 @@ function createPowerUp() {
 }
 
 function spawnEnemies() {
-    const random = Math.random();
-    if (random < 0.7) { // 70% chance to spawn one car
+    const pattern = Math.random();
+
+    if (pattern < 0.3) { // Single car (30%)
         createEnemyCar();
-    } else if (random < 0.9) { // 20% chance to spawn two cars in different lanes
+    } else if (pattern < 0.6) { // Two cars, adjacent lanes (30%)
+        let startLane = Math.floor(Math.random() * 2); // 0 or 1
+        createEnemyCar(startLane);
+        createEnemyCar(startLane + 1);
+    } else if (pattern < 0.8) { // Two cars, non-adjacent lanes (20%)
         let lane1 = generateRandomLane();
         let lane2;
         do {
             lane2 = generateRandomLane();
-        } while (lane1 === lane2);
+        } while (lane1 === lane2 || Math.abs(lane1 - lane2) === 1);
         createEnemyCar(lane1);
         createEnemyCar(lane2);
-    } else { // 10% chance to spawn three cars (leaving one lane open)
+    } else if (pattern < 0.9) { // Three cars, one lane open (10%)
         let openLane = generateRandomLane();
         for (let i = 0; i < 3; i++) {
             if (i !== openLane) {
                 createEnemyCar(i);
             }
         }
+    } else { // Two cars, staggered (10%)
+        let lane1 = generateRandomLane();
+        let lane2;
+        do {
+            lane2 = generateRandomLane();
+        } while (lane1 === lane2);
+        createEnemyCar(lane1);
+        createEnemyCar(lane2, 100); // Second car appears slightly lower
     }
 }
 
@@ -325,14 +339,26 @@ function activatePowerUp(type) {
     if (type === 'scoreMultiplier') {
         scoreMultiplier = 2; // Double le score
         powerUpActive = true;
+        powerUpTimerDisplay.style.display = 'block';
+        let timeLeft = 5;
+        powerUpTimerDisplay.textContent = `2X Score: ${timeLeft}s`;
         // Réinitialiser le timer si un power-up est déjà actif
         clearTimeout(powerUpTimer);
-        powerUpTimer = setTimeout(() => {
-            scoreMultiplier = 1;
-            powerUpActive = false;
-        }, 5000); // Power-up dure 5 secondes
+        powerUpTimer = setInterval(() => {
+            timeLeft--;
+            powerUpTimerDisplay.textContent = `2X Score: ${timeLeft}s`;
+            if (timeLeft <= 0) {
+                clearInterval(powerUpTimer);
+                scoreMultiplier = 1;
+                powerUpActive = false;
+                powerUpTimerDisplay.style.display = 'none';
+            }
+        }, 1000);
     } else if (type === 'invincible') {
         playerCar.invincible = true;
+        powerUpTimerDisplay.style.display = 'block';
+        let timeLeft = 7;
+        powerUpTimerDisplay.textContent = `Invincible: ${timeLeft}s`;
         // Start flashing
         playerCar.flash = true;
         invincibleFlashInterval = setInterval(() => {
@@ -341,11 +367,17 @@ function activatePowerUp(type) {
 
         // Réinitialiser le timer si un power-up est déjà actif
         clearTimeout(invincibleTimer);
-        invincibleTimer = setTimeout(() => {
-            playerCar.invincible = false;
-            clearInterval(invincibleFlashInterval);
-            playerCar.flash = false; // Ensure it's visible after invincibility ends
-        }, 7000); // Invincibilité dure 7 secondes
+        invincibleTimer = setInterval(() => {
+            timeLeft--;
+            powerUpTimerDisplay.textContent = `Invincible: ${timeLeft}s`;
+            if (timeLeft <= 0) {
+                clearInterval(invincibleTimer);
+                playerCar.invincible = false;
+                clearInterval(invincibleFlashInterval);
+                playerCar.flash = false; // Ensure it's visible after invincibility ends
+                powerUpTimerDisplay.style.display = 'none';
+            }
+        }, 1000);
     }
 }
 
@@ -355,6 +387,7 @@ function setGameState(newState) {
     startScreen.style.display = 'none';
     gameOverScreen.style.display = 'none';
     pauseButton.style.display = 'none';
+    powerUpTimerDisplay.style.display = 'none'; // Hide timer on state change
 
     switch (gameState) {
         case 'LOADING':

@@ -38,6 +38,14 @@ canvas {
     transition: transform 0.1s ease-out;
 }
 
+.power-up-timer {
+    margin-top: 10px;
+    font-size: 1em;
+    color: #007bff;
+    font-weight: bold;
+    text-align: center;
+}
+
 button {
     margin-top: 20px;
     padding: 10px 20px;
