@@ -15,23 +15,27 @@ h1 {
 
 .game-container {
     position: relative;
-    width: 400px;
-    height: 600px;
+    width: 100%; /* Make it responsive */
+    max-width: 400px; /* Max width for larger screens */
+    height: auto; /* Adjust height automatically */
+    aspect-ratio: 4 / 6; /* Maintain aspect ratio */
     border: 2px solid #333;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    overflow: hidden; /* Important pour le défilement de la route */
+    overflow: hidden;
 }
 
 canvas {
     background-color: #444;
     display: block;
+    width: 100%; /* Canvas fills its container */
+    height: 100%;
 }
 
 .score-container {
     margin-top: 10px;
     font-size: 1.2em;
     color: #555;
-    transition: transform 0.1s ease-out; /* Add transition for score scaling */
+    transition: transform 0.1s ease-out;
 }
 
 button {
