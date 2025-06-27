@@ -55,7 +55,8 @@ button:hover {
 }
 
 .game-over-screen,
-.start-screen {
+.start-screen,
+.loading-screen {
     position: absolute;
     top: 0;
     left: 0;
@@ -73,11 +74,13 @@ button:hover {
 }
 
 .game-over-screen h2,
-.start-screen h2 {
+.start-screen h2,
+.loading-screen h2 {
     margin-bottom: 10px;
 }
 
 .game-over-screen p,
-.start-screen p {
+.start-screen p,
+.loading-screen p {
     margin-bottom: 20px;
 }

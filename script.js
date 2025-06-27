@@ -4,18 +4,25 @@ const scoreDisplay = document.getElementById('score');
 const finalScoreDisplay = document.getElementById('finalScore');
 const highScoreDisplay = document.getElementById('highScoreDisplay');
 const currentHighScoreDisplay = document.getElementById('currentHighScore');
-const startButton = document.getElementById('startButton'); // This button is now hidden
 const startFromScreenButton = document.getElementById('startFromScreenButton');
 const restartButton = document.getElementById('restartButton');
 const pauseButton = document.getElementById('pauseButton');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const startScreen = document.getElementById('startScreen');
+const loadingScreen = document.getElementById('loadingScreen');
 
 // Images
-const playerCarImg = document.getElementById('playerCarImg');
-const enemyCarImg1 = document.getElementById('enemyCarImg1');
-const enemyCarImg2 = document.getElementById('enemyCarImg2');
-const roadImg = document.getElementById('roadImg');
+const playerCarImg = new Image();
+playerCarImg.src = "https://via.placeholder.com/50x80/0000FF/FFFFFF?text=Player";
+const enemyCarImg1 = new Image();
+enemyCarImg1.src = "https://via.placeholder.com/50x80/FF0000/FFFFFF?text=Enemy1";
+const enemyCarImg2 = new Image();
+enemyCarImg2.src = "https://via.placeholder.com/50x80/00FF00/FFFFFF?text=Enemy2";
+const roadImg = new Image();
+roadImg.src = "https://via.placeholder.com/400x600/808080/FFFFFF?text=Road";
+
+const images = [playerCarImg, enemyCarImg1, enemyCarImg2, roadImg];
+let assetsLoaded = 0;
 
 // Sons
 const crashSound = document.getElementById('crashSound');
@@ -44,8 +51,7 @@ let highScore = localStorage.getItem('carGameHighScore') || 0;
 let gameSpeed = 3; // Vitesse initiale des voitures ennemies
 let gameInterval;
 let enemySpawnInterval;
-let gameRunning = false;
-let gamePaused = false;
+let gameState = 'LOADING'; // LOADING, START_SCREEN, PLAYING, PAUSED, GAME_OVER
 let roadScrollOffset = 0;
 
 // Adjust canvas size and car dimensions based on window size
@@ -91,8 +97,9 @@ function resizeGame() {
         enemy.x = lane * LANE_WIDTH + (LANE_WIDTH / 2) - (enemy.width / 2);
     });
 
-    drawRoad();
-    drawCar(playerCar, playerCarImg);
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+        drawGame();
+    }
 }
 
 // Fonction pour dessiner une voiture avec une image
@@ -155,24 +162,26 @@ function spawnEnemies() {
     }
 }
 
+function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawRoad();
+    drawCar(playerCar, playerCarImg);
+    enemyCars.forEach(enemy => drawCar(enemy, enemy.img));
+}
+
 function updateGameArea() {
-    if (!gameRunning || gamePaused) return;
+    if (gameState !== 'PLAYING') return;
 
     // Défilement de la route
     roadScrollOffset += gameSpeed;
     if (roadScrollOffset >= canvas.height) {
         roadScrollOffset = 0;
     }
-    drawRoad();
-
-    // Dessiner la voiture du joueur
-    drawCar(playerCar, playerCarImg);
 
     // Mettre à jour et dessiner les voitures ennemies
     for (let i = 0; i < enemyCars.length; i++) {
         let enemy = enemyCars[i];
         enemy.y += enemy.speed;
-        drawCar(enemy, enemy.img);
 
         // Supprimer les voitures sorties de l'écran
         if (enemy.y > canvas.height) {
@@ -205,52 +214,69 @@ function updateGameArea() {
             playerCar.y + playerCar.height > enemy.y
         ) {
             crashSound.play();
-            endGame();
+            setGameState('GAME_OVER');
             return;
         }
+    }
+    drawGame();
+}
+
+function setGameState(newState) {
+    gameState = newState;
+    loadingScreen.style.display = 'none';
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    pauseButton.style.display = 'none';
+
+    switch (gameState) {
+        case 'LOADING':
+            loadingScreen.style.display = 'flex';
+            break;
+        case 'START_SCREEN':
+            startScreen.style.display = 'flex';
+            updateHighScoreDisplay();
+            break;
+        case 'PLAYING':
+            pauseButton.style.display = 'block';
+            gameInterval = setInterval(updateGameArea, 20);
+            enemySpawnInterval = setInterval(spawnEnemies, 2000);
+            break;
+        case 'PAUSED':
+            pauseButton.style.display = 'block';
+            pauseButton.textContent = 'Reprendre';
+            clearInterval(gameInterval);
+            clearInterval(enemySpawnInterval);
+            break;
+        case 'GAME_OVER':
+            finalScoreDisplay.textContent = score;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('carGameHighScore', highScore);
+            }
+            highScoreDisplay.textContent = highScore;
+            gameOverScreen.style.display = 'flex
+            clearInterval(gameInterval);
+            clearInterval(enemySpawnInterval);
+            break;
     }
 }
 
 function startGame() {
-    gameRunning = true;
-    gamePaused = false;
     score = 0;
     scoreDisplay.textContent = score;
     gameSpeed = 3;
-    resizeGame(); // Set initial size and position
+    resizeGame();
+    playerCar.x = canvas.width / 2 - playerCar.width / 2;
+    playerCar.y = canvas.height - playerCar.height - 10;
     enemyCars = [];
-    startScreen.style.display = 'none'; // Hide the start screen
-    gameOverScreen.style.display = 'none';
-    pauseButton.style.display = 'block';
-    updateHighScoreDisplay();
-
-    gameInterval = setInterval(updateGameArea, 20); // Rafraîchissement du jeu
-    enemySpawnInterval = setInterval(spawnEnemies, 2000); // Apparition des voitures ennemies
-}
-
-function endGame() {
-    gameRunning = false;
-    clearInterval(gameInterval);
-    clearInterval(enemySpawnInterval);
-    finalScoreDisplay.textContent = score;
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('carGameHighScore', highScore);
-    }
-    highScoreDisplay.textContent = highScore;
-    gameOverScreen.style.display = 'flex';
-    pauseButton.style.display = 'none';
+    setGameState('PLAYING');
 }
 
 function togglePause() {
-    gamePaused = !gamePaused;
-    if (gamePaused) {
-        clearInterval(gameInterval);
-        clearInterval(enemySpawnInterval);
-        pauseButton.textContent = 'Reprendre';
-    } else {
-        gameInterval = setInterval(updateGameArea, 20);
-        enemySpawnInterval = setInterval(spawnEnemies, Math.max(500, 2000 - gameSpeed * 100));
+    if (gameState === 'PLAYING') {
+        setGameState('PAUSED');
+    } else if (gameState === 'PAUSED') {
+        setGameState('PLAYING');
         pauseButton.textContent = 'Pause';
     }
 }
@@ -261,7 +287,7 @@ function updateHighScoreDisplay() {
 
 // Contrôles de la voiture du joueur (clavier)
 document.addEventListener('keydown', (e) => {
-    if (!gameRunning || gamePaused) return;
+    if (gameState !== 'PLAYING') return;
 
     if (e.key === 'ArrowLeft' || e.key === 'q') {
         playerCar.x -= playerCar.speed * 10; // Déplacement plus rapide
@@ -277,12 +303,12 @@ document.addEventListener('keydown', (e) => {
 // Contrôles de la voiture du joueur (tactile)
 let touchStartX = 0;
 canvas.addEventListener('touchstart', (e) => {
-    if (!gameRunning || gamePaused) return;
+    if (gameState !== 'PLAYING') return;
     touchStartX = e.touches[0].clientX;
 });
 
 canvas.addEventListener('touchmove', (e) => {
-    if (!gameRunning || gamePaused) return;
+    if (gameState !== 'PLAYING') return;
     const touchCurrentX = e.touches[0].clientX;
     const deltaX = touchCurrentX - touchStartX;
 
@@ -300,16 +326,36 @@ startFromScreenButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
 pauseButton.addEventListener('click', togglePause);
 
-// Initialisation du jeu (pour afficher la voiture du joueur avant de commencer)
-window.onload = () => {
-    resizeGame(); // Initial resize
-    updateHighScoreDisplay();
-    drawRoad();
-    drawCar(playerCar, playerCarImg);
-    // Show start screen initially
-    startScreen.style.display = 'flex';
-    startButton.style.display = 'none'; // Ensure old button is hidden
-    pauseButton.style.display = 'none'; // Ensure pause button is hidden
-};
-
 window.addEventListener('resize', resizeGame);
+
+// Asset loading
+images.forEach(img => {
+    img.onload = () => {
+        assetsLoaded++;
+        if (assetsLoaded === images.length) {
+            // All images loaded, check sounds
+            if (crashSound.readyState >= 2 && scoreSound.readyState >= 2) {
+                setGameState('START_SCREEN');
+                resizeGame(); // Initial resize after assets are loaded
+            } else {
+                // Wait for sounds to load
+                crashSound.addEventListener('canplaythrough', checkSoundsLoaded);
+                scoreSound.addEventListener('canplaythrough', checkSoundsLoaded);
+            }
+        }
+    };
+    img.onerror = () => {
+        console.error("Failed to load image: " + img.src);
+        // Handle error, maybe show a message or use a fallback
+    };
+});
+
+function checkSoundsLoaded() {
+    if (crashSound.readyState >= 2 && scoreSound.readyState >= 2 && assetsLoaded === images.length) {
+        setGameState('START_SCREEN');
+        resizeGame();
+    }
+}
+
+// Initial state
+setGameState('LOADING');
