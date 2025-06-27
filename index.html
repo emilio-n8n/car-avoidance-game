@@ -3,14 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeu de Voiture</title>
+    <title>Jeu de Voiture Avancé</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>Jeu de Voiture</h1>
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="game-over-screen" id="gameOverScreen">
+            <h2>Game Over!</h2>
+            <p>Votre score: <span id="finalScore">0</span></p>
+            <button id="restartButton">Rejouer</button>
+        </div>
+    </div>
     <div class="score-container">Score: <span id="score">0</span></div>
     <button id="startButton">Démarrer le jeu</button>
+
+    <!-- Assets cachés pour le jeu -->
+    <img id="playerCarImg" src="https://via.placeholder.com/50x80/0000FF/FFFFFF?text=Player" alt="Voiture du joueur" style="display:none;">
+    <img id="enemyCarImg1" src="https://via.placeholder.com/50x80/FF0000/FFFFFF?text=Enemy1" alt="Voiture ennemie 1" style="display:none;">
+    <img id="enemyCarImg2" src="https://via.placeholder.com/50x80/00FF00/FFFFFF?text=Enemy2" alt="Voiture ennemie 2" style="display:none;">
+    <img id="roadImg" src="https://via.placeholder.com/400x600/808080/FFFFFF?text=Road" alt="Route" style="display:none;">
+
+    <audio id="crashSound" src="https://www.soundjay.com/mechanical/sounds/car-crash-01.mp3" preload="auto" style="display:none;"></audio>
+    <audio id="scoreSound" src="https://www.soundjay.com/misc/sounds/ding-01.mp3" preload="auto" style="display:none;"></audio>
+
     <script src="script.js"></script>
 </body>
 </html>

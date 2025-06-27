@@ -13,10 +13,18 @@ h1 {
     margin-bottom: 20px;
 }
 
-canvas {
-    background-color: #444;
+.game-container {
+    position: relative;
+    width: 400px;
+    height: 600px;
     border: 2px solid #333;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    overflow: hidden; /* Important pour le défilement de la route */
+}
+
+canvas {
+    background-color: #444;
+    display: block;
 }
 
 .score-container {
@@ -39,4 +47,30 @@ button {
 
 button:hover {
     background-color: #0056b3;
+}
+
+.game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 1.5em;
+    z-index: 10;
+    display: none; /* Caché par défaut */
+}
+
+.game-over-screen h2 {
+    margin-bottom: 10px;
+}
+
+.game-over-screen p {
+    margin-bottom: 20px;
 }
