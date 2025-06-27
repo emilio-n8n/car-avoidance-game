@@ -72,9 +72,9 @@ function generateRandomLane() {
     return Math.floor(Math.random() * 3); // 0, 1, ou 2 pour les trois voies
 }
 
-function createEnemyCar() {
-    const lane = generateRandomLane();
-    const x = lane * LANE_WIDTH + (LANE_WIDTH / 2) - (ENEMY_CAR_WIDTH / 2);
+function createEnemyCar(lane = null) {
+    const selectedLane = lane !== null ? lane : generateRandomLane();
+    const x = selectedLane * LANE_WIDTH + (LANE_WIDTH / 2) - (ENEMY_CAR_WIDTH / 2);
     const enemyImg = Math.random() < 0.5 ? enemyCarImg1 : enemyCarImg2;
     enemyCars.push({
         x: x,
@@ -84,6 +84,28 @@ function createEnemyCar() {
         speed: gameSpeed,
         img: enemyImg
     });
+}
+
+function spawnEnemies() {
+    const random = Math.random();
+    if (random < 0.7) { // 70% chance to spawn one car
+        createEnemyCar();
+    } else if (random < 0.9) { // 20% chance to spawn two cars in different lanes
+        let lane1 = generateRandomLane();
+        let lane2;
+        do {
+            lane2 = generateRandomLane();
+        } while (lane1 === lane2);
+        createEnemyCar(lane1);
+        createEnemyCar(lane2);
+    } else { // 10% chance to spawn three cars (leaving one lane open)
+        let openLane = generateRandomLane();
+        for (let i = 0; i < 3; i++) {
+            if (i !== openLane) {
+                createEnemyCar(i);
+            }
+        }
+    }
 }
 
 function updateGameArea() {
@@ -124,7 +146,7 @@ function updateGameArea() {
                 // Mettre à jour la vitesse des voitures existantes et futures
                 enemyCars.forEach(car => car.speed = gameSpeed);
                 clearInterval(enemySpawnInterval);
-                enemySpawnInterval = setInterval(createEnemyCar, Math.max(500, 2000 - gameSpeed * 100)); // Diminuer l'intervalle de spawn
+                enemySpawnInterval = setInterval(spawnEnemies, Math.max(500, 2000 - gameSpeed * 100)); // Diminuer l'intervalle de spawn
             }
         }
 
@@ -151,14 +173,13 @@ function startGame() {
     playerCar.x = canvas.width / 2 - PLAYER_CAR_WIDTH / 2;
     playerCar.y = canvas.height - PLAYER_CAR_HEIGHT - 10;
     enemyCars = [];
-    startButton.style.display = 'none'; // Hide the old start button
     startScreen.style.display = 'none'; // Hide the start screen
-    pauseButton.style.display = 'block';
     gameOverScreen.style.display = 'none';
+    pauseButton.style.display = 'block';
     updateHighScoreDisplay();
 
     gameInterval = setInterval(updateGameArea, 20); // Rafraîchissement du jeu
-    enemySpawnInterval = setInterval(createEnemyCar, 2000); // Apparition des voitures ennemies
+    enemySpawnInterval = setInterval(spawnEnemies, 2000); // Apparition des voitures ennemies
 }
 
 function endGame() {
@@ -183,7 +204,7 @@ function togglePause() {
         pauseButton.textContent = 'Reprendre';
     } else {
         gameInterval = setInterval(updateGameArea, 20);
-        enemySpawnInterval = setInterval(createEnemyCar, Math.max(500, 2000 - gameSpeed * 100));
+        enemySpawnInterval = setInterval(spawnEnemies, Math.max(500, 2000 - gameSpeed * 100));
         pauseButton.textContent = 'Pause';
     }
 }
@@ -208,7 +229,6 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Event Listeners
-startButton.addEventListener('click', startGame); // Old button, now hidden
 startFromScreenButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
 pauseButton.addEventListener('click', togglePause);
@@ -220,6 +240,5 @@ window.onload = () => {
     drawCar(playerCar, playerCarImg);
     // Show start screen initially
     startScreen.style.display = 'flex';
-    startButton.style.display = 'none'; // Ensure old button is hidden
     pauseButton.style.display = 'none'; // Ensure pause button is hidden
 };
