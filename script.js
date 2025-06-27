@@ -50,7 +50,8 @@ let playerCar = {
     width: PLAYER_CAR_WIDTH,
     height: PLAYER_CAR_HEIGHT,
     speed: 5,
-    invincible: false
+    invincible: false,
+    flash: false
 };
 
 let enemyCars = [];
@@ -60,6 +61,7 @@ let scoreMultiplier = 1;
 let powerUpActive = false;
 let powerUpTimer;
 let invincibleTimer;
+let invincibleFlashInterval;
 let highScore = localStorage.getItem('carGameHighScore') || 0;
 let gameSpeed = 3; // Vitesse initiale des voitures ennemies
 let gameInterval;
@@ -215,12 +217,19 @@ function spawnEnemies() {
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawRoad();
-    drawCar(playerCar, playerCarImg);
+
+    // Draw player car, with flashing effect if invincible
+    if (playerCar.invincible && playerCar.flash) {
+        // Don't draw if flashing off
+    } else {
+        drawCar(playerCar, playerCarImg);
+    }
+
     enemyCars.forEach(enemy => drawCar(enemy, enemy.img));
     powerUps.forEach(powerUp => ctx.drawImage(powerUp.img, powerUp.x, powerUp.y, powerUp.width, powerUp.height));
 
     // Draw power-up active indicator
-    if (powerUpActive) {
+    if (scoreMultiplier > 1) {
         ctx.fillStyle = 'yellow';
         ctx.font = '20px Arial';
         ctx.textAlign = 'center';
@@ -324,10 +333,18 @@ function activatePowerUp(type) {
         }, 5000); // Power-up dure 5 secondes
     } else if (type === 'invincible') {
         playerCar.invincible = true;
+        // Start flashing
+        playerCar.flash = true;
+        invincibleFlashInterval = setInterval(() => {
+            playerCar.flash = !playerCar.flash;
+        }, 100); // Flash every 100ms
+
         // Réinitialiser le timer si un power-up est déjà actif
         clearTimeout(invincibleTimer);
         invincibleTimer = setTimeout(() => {
             playerCar.invincible = false;
+            clearInterval(invincibleFlashInterval);
+            playerCar.flash = false; // Ensure it's visible after invincibility ends
         }, 7000); // Invincibilité dure 7 secondes
     }
 }
@@ -359,6 +376,7 @@ function setGameState(newState) {
             clearInterval(gameInterval);
             clearInterval(enemySpawnInterval);
             clearInterval(powerUpSpawnInterval);
+            clearInterval(invincibleFlashInterval);
             break;
         case 'GAME_OVER':
             finalScoreDisplay.textContent = score;
@@ -371,6 +389,9 @@ function setGameState(newState) {
             clearInterval(gameInterval);
             clearInterval(enemySpawnInterval);
             clearInterval(powerUpSpawnInterval);
+            clearInterval(invincibleFlashInterval);
+            playerCar.invincible = false; // Ensure invincibility is off
+            playerCar.flash = false; // Ensure car is visible
             break;
     }
 }
@@ -380,8 +401,10 @@ function startGame() {
     scoreMultiplier = 1;
     powerUpActive = false;
     playerCar.invincible = false;
+    playerCar.flash = false;
     clearTimeout(powerUpTimer);
     clearTimeout(invincibleTimer);
+    clearInterval(invincibleFlashInterval);
     scoreDisplay.textContent = score;
     gameSpeed = 3;
     resizeGame();
