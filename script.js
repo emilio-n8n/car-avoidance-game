@@ -20,18 +20,23 @@ const enemyCarImg2 = new Image();
 enemyCarImg2.src = "https://via.placeholder.com/50x80/00FF00/FFFFFF?text=Enemy2";
 const roadImg = new Image();
 roadImg.src = "https://via.placeholder.com/400x600/808080/FFFFFF?text=Road";
+const powerUpImg = new Image();
+powerUpImg.src = "https://via.placeholder.com/30x30/FFFF00/000000?text=P";
 
-const images = [playerCarImg, enemyCarImg1, enemyCarImg2, roadImg];
+const images = [playerCarImg, enemyCarImg1, enemyCarImg2, roadImg, powerUpImg];
 let assetsLoaded = 0;
 
 // Sons
 const crashSound = document.getElementById('crashSound');
 const scoreSound = document.getElementById('scoreSound');
+const powerUpSound = document.getElementById('powerUpSound');
 
 let PLAYER_CAR_WIDTH = 50;
 let PLAYER_CAR_HEIGHT = 80;
 let ENEMY_CAR_WIDTH = 50;
 let ENEMY_CAR_HEIGHT = 80;
+let POWER_UP_WIDTH = 30;
+let POWER_UP_HEIGHT = 30;
 let LANE_WIDTH;
 const ROAD_MARKING_WIDTH = 10;
 const ROAD_MARKING_HEIGHT = 50;
@@ -46,11 +51,16 @@ let playerCar = {
 };
 
 let enemyCars = [];
+let powerUps = [];
 let score = 0;
+let scoreMultiplier = 1;
+let powerUpActive = false;
+let powerUpTimer;
 let highScore = localStorage.getItem('carGameHighScore') || 0;
 let gameSpeed = 3; // Vitesse initiale des voitures ennemies
 let gameInterval;
 let enemySpawnInterval;
+let powerUpSpawnInterval;
 let gameState = 'LOADING'; // LOADING, START_SCREEN, PLAYING, PAUSED, GAME_OVER
 let roadScrollOffset = 0;
 
@@ -82,6 +92,8 @@ function resizeGame() {
     PLAYER_CAR_HEIGHT = (PLAYER_CAR_WIDTH / 50) * 80;
     ENEMY_CAR_WIDTH = newWidth / 8;
     ENEMY_CAR_HEIGHT = (ENEMY_CAR_WIDTH / 50) * 80;
+    POWER_UP_WIDTH = newWidth / 12;
+    POWER_UP_HEIGHT = newWidth / 12;
 
     playerCar.width = PLAYER_CAR_WIDTH;
     playerCar.height = PLAYER_CAR_HEIGHT;
@@ -95,6 +107,14 @@ function resizeGame() {
         // Re-position enemies to fit new lane widths
         const lane = Math.floor(enemy.x / (canvas.width / 3));
         enemy.x = lane * LANE_WIDTH + (LANE_WIDTH / 2) - (enemy.width / 2);
+    });
+
+    // Adjust power-up sizes
+    powerUps.forEach(powerUp => {
+        powerUp.width = POWER_UP_WIDTH;
+        powerUp.height = POWER_UP_HEIGHT;
+        const lane = Math.floor(powerUp.x / (canvas.width / 3));
+        powerUp.x = lane * LANE_WIDTH + (LANE_WIDTH / 2) - (powerUp.width / 2);
     });
 
     if (gameState === 'PLAYING' || gameState === 'PAUSED') {
@@ -140,6 +160,20 @@ function createEnemyCar(lane = null) {
     });
 }
 
+function createPowerUp() {
+    const lane = generateRandomLane();
+    const x = lane * LANE_WIDTH + (LANE_WIDTH / 2) - (POWER_UP_WIDTH / 2);
+    powerUps.push({
+        x: x,
+        y: -POWER_UP_HEIGHT,
+        width: POWER_UP_WIDTH,
+        height: POWER_UP_HEIGHT,
+        speed: gameSpeed,
+        img: powerUpImg,
+        type: 'scoreMultiplier'
+    });
+}
+
 function spawnEnemies() {
     const random = Math.random();
     if (random < 0.7) { // 70% chance to spawn one car
@@ -167,6 +201,7 @@ function drawGame() {
     drawRoad();
     drawCar(playerCar, playerCarImg);
     enemyCars.forEach(enemy => drawCar(enemy, enemy.img));
+    powerUps.forEach(powerUp => ctx.drawImage(powerUp.img, powerUp.x, powerUp.y, powerUp.width, powerUp.height));
 }
 
 function updateGameArea() {
@@ -186,7 +221,7 @@ function updateGameArea() {
         // Supprimer les voitures sorties de l'écran
         if (enemy.y > canvas.height) {
             enemyCars.splice(i, 1);
-            score++;
+            score += 1 * scoreMultiplier;
             scoreDisplay.textContent = score;
             scoreSound.play();
             // Petit effet visuel sur le score
@@ -206,7 +241,7 @@ function updateGameArea() {
             }
         }
 
-        // Détection de collision
+        // Détection de collision avec les ennemis
         if (
             playerCar.x < enemy.x + enemy.width &&
             playerCar.x + playerCar.width > enemy.x &&
@@ -218,7 +253,46 @@ function updateGameArea() {
             return;
         }
     }
+
+    // Mettre à jour et dessiner les power-ups
+    for (let i = 0; i < powerUps.length; i++) {
+        let powerUp = powerUps[i];
+        powerUp.y += powerUp.speed;
+
+        // Supprimer les power-ups sortis de l'écran
+        if (powerUp.y > canvas.height) {
+            powerUps.splice(i, 1);
+            i--;
+        }
+
+        // Détection de collision avec les power-ups
+        if (
+            playerCar.x < powerUp.x + powerUp.width &&
+            playerCar.x + playerCar.width > powerUp.x &&
+            playerCar.y < powerUp.y + powerUp.height &&
+            playerCar.y + playerCar.height > powerUp.y
+        ) {
+            powerUpSound.play();
+            powerUps.splice(i, 1);
+            i--;
+            activatePowerUp(powerUp.type);
+        }
+    }
+
     drawGame();
+}
+
+function activatePowerUp(type) {
+    if (type === 'scoreMultiplier') {
+        scoreMultiplier = 2; // Double le score
+        powerUpActive = true;
+        // Réinitialiser le timer si un power-up est déjà actif
+        clearTimeout(powerUpTimer);
+        powerUpTimer = setTimeout(() => {
+            scoreMultiplier = 1;
+            powerUpActive = false;
+        }, 5000); // Power-up dure 5 secondes
+    }
 }
 
 function setGameState(newState) {
@@ -240,12 +314,14 @@ function setGameState(newState) {
             pauseButton.style.display = 'block';
             gameInterval = setInterval(updateGameArea, 20);
             enemySpawnInterval = setInterval(spawnEnemies, 2000);
+            powerUpSpawnInterval = setInterval(createPowerUp, 10000); // Power-up toutes les 10 secondes
             break;
         case 'PAUSED':
             pauseButton.style.display = 'block';
             pauseButton.textContent = 'Reprendre';
             clearInterval(gameInterval);
             clearInterval(enemySpawnInterval);
+            clearInterval(powerUpSpawnInterval);
             break;
         case 'GAME_OVER':
             finalScoreDisplay.textContent = score;
@@ -254,21 +330,26 @@ function setGameState(newState) {
                 localStorage.setItem('carGameHighScore', highScore);
             }
             highScoreDisplay.textContent = highScore;
-            gameOverScreen.style.display = 'flex
+            gameOverScreen.style.display = 'flex';
             clearInterval(gameInterval);
             clearInterval(enemySpawnInterval);
+            clearInterval(powerUpSpawnInterval);
             break;
     }
 }
 
 function startGame() {
     score = 0;
+    scoreMultiplier = 1;
+    powerUpActive = false;
+    clearTimeout(powerUpTimer);
     scoreDisplay.textContent = score;
     gameSpeed = 3;
     resizeGame();
     playerCar.x = canvas.width / 2 - playerCar.width / 2;
     playerCar.y = canvas.height - playerCar.height - 10;
     enemyCars = [];
+    powerUps = [];
     setGameState('PLAYING');
 }
 
@@ -334,13 +415,14 @@ images.forEach(img => {
         assetsLoaded++;
         if (assetsLoaded === images.length) {
             // All images loaded, check sounds
-            if (crashSound.readyState >= 2 && scoreSound.readyState >= 2) {
+            if (crashSound.readyState >= 2 && scoreSound.readyState >= 2 && powerUpSound.readyState >= 2) {
                 setGameState('START_SCREEN');
                 resizeGame(); // Initial resize after assets are loaded
             } else {
                 // Wait for sounds to load
                 crashSound.addEventListener('canplaythrough', checkSoundsLoaded);
                 scoreSound.addEventListener('canplaythrough', checkSoundsLoaded);
+                powerUpSound.addEventListener('canplaythrough', checkSoundsLoaded);
             }
         }
     };
@@ -351,7 +433,7 @@ images.forEach(img => {
 });
 
 function checkSoundsLoaded() {
-    if (crashSound.readyState >= 2 && scoreSound.readyState >= 2 && assetsLoaded === images.length) {
+    if (crashSound.readyState >= 2 && scoreSound.readyState >= 2 && powerUpSound.readyState >= 2 && assetsLoaded === images.length) {
         setGameState('START_SCREEN');
         resizeGame();
     }
